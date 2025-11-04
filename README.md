@@ -194,15 +194,7 @@ icpay-agent/
 └── README.md
 ```
 
-## 🚀 Setup Instructions
-
-### Prerequisites
-
-- **Node.js** >= 18.0.0
-- **npm** >= 7.0.0
-- **DFX** (Internet Computer SDK)
-- **Rust** (for backend compilation)
-- **ICPay Account** (for publishable key)
+## Setup Instructions
 
 ### 1. Install Dependencies
 
