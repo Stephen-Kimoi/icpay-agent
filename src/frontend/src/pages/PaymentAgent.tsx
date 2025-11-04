@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
-import { PaymentState, Quote, PaymentResult, JobResult } from "@/types/payment";
+import { PaymentState, PaymentResult, JobResult } from "@/types/payment";
+import { Quote } from "@/types/quote";
+import { getQuote } from "@/services/quoteService";
 
 export default function PaymentAgent() {
   const [userRequest, setUserRequest] = useState("");
@@ -10,6 +12,7 @@ export default function PaymentAgent() {
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
   const [jobResult, setJobResult] = useState<JobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   
   const connect = async () => {
     setError("Wallet connection not implemented");
@@ -19,12 +22,29 @@ export default function PaymentAgent() {
     setError("Wallet disconnection not implemented");
   };
 
-  const handleGetQuote = (): void => {
+  const handleGetQuote = async (): Promise<void> => {
     if (!userRequest.trim()) {
       setError("Please enter a request");
       return;
     }
-    setError("Quote functionality not implemented");
+    setError(null);
+    setState("idle");
+    setQuote(null);
+    setPaymentResult(null);
+    setJobResult(null);
+    setLoading(true);
+    
+    try {
+      const quoteData = await getQuote(userRequest);
+      setQuote(quoteData);
+      setState("quoted");
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to get quote. Please try again.");
+      setState("error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePayNow = async (): Promise<void> => {
@@ -57,8 +77,7 @@ export default function PaymentAgent() {
     return "completed";
   };
 
-  const isProcessing = state === "executing";
-  const isGettingQuote = false;
+  const isProcessing = state === "executing" || loading;
   const isPaymentPending = false;
   const isConnected = false;
   const hasWallet = false;
@@ -192,7 +211,7 @@ export default function PaymentAgent() {
         )}
 
         {/* Loading Quote */}
-        {isGettingQuote && (
+        {loading && (
           <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
             <span className="text-purple-300">Getting quote...</span>
@@ -220,7 +239,7 @@ export default function PaymentAgent() {
             disabled={isProcessing || (state !== "idle" && state !== "error" && state !== "quoted")}
             className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-6 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isGettingQuote ? (
+            {loading ? (
               <span className="inline-flex items-center justify-center">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Getting Quote...
