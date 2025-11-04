@@ -282,7 +282,7 @@ export default function PaymentAgent() {
               ) : (
                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm">
                   <p className="font-semibold mb-1">Configuration Error</p>
-                  <p>ICPay publishable key is missing. Please set VITE_ICPAY_PUBLISHABLE_KEY in your environment variables.</p>
+                  <p>ICPay publishable key is missing. Please set PUBLIC_KEY in your environment variables.</p>
                   <p className="mt-2 text-xs text-yellow-400">See README.md for setup instructions.</p>
                 </div>
               )}

@@ -24,11 +24,10 @@ export interface ICPayConfig {
  */
 export const getPublishableKey = (): string | null => {
   console.log("Getting publishable key...");
-  const publishableKey = import.meta.env.VITE_ICPAY_PUBLISHABLE_KEY || '';
-  // console.log("publishableKey", publishableKey);
+  const publishableKey = import.meta.env.PUBLIC_KEY || '';
 
   if (!publishableKey || publishableKey.trim() === '') {
-    console.error('ICPay publishable key is missing. Please set VITE_ICPAY_PUBLISHABLE_KEY in your environment variables.');
+    console.error('ICPay publishable key is missing. Please set PUBLIC_KEY in your environment variables.');
     return null;
   }
   
@@ -36,11 +35,6 @@ export const getPublishableKey = (): string | null => {
   if (publishableKey.startsWith('sk_')) {
     console.error('ERROR: You are using a SECRET KEY (sk_) instead of a PUBLISHABLE KEY (pk_). Secret keys should NEVER be used in frontend code.');
     return null;
-  }
-  
-  // Validate that it's a publishable key format
-  if (!publishableKey.startsWith('pk_test_') && !publishableKey.startsWith('pk_live_')) {
-    console.warn('Warning: Publishable key should start with pk_test_ (test mode) or pk_live_ (production mode).');
   }
   
   console.log("Getting publishable key... done");
@@ -112,7 +106,7 @@ export const handlePaymentError = (error: unknown): string => {
     
     // Provide user-friendly error messages
     if (msg.includes('Failed to fetch verified ledgers') || msg.includes('401')) {
-      errorMessage = 'ICPay authentication failed. Please check your publishable key (VITE_ICPAY_PUBLISHABLE_KEY) in your environment variables.';
+      errorMessage = 'ICPay authentication failed. Please check your publishable key (PUBLIC_KEY) in your environment variables.';
     } else if (msg.includes('CORS') || msg.includes('Failed to fetch')) {
       errorMessage = 'Network error. Please ensure your Internet Computer replica is running and accessible. If using a wallet, check that the IC replica endpoint is configured correctly.';
     } else {
