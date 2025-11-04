@@ -1,29 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
-
-type PaymentState =
-  | "idle"
-  | "quoted"
-  | "waiting_for_payment"
-  | "executing"
-  | "completed"
-  | "error";
-
-interface Quote {
-  price: number;
-  currency: string;
-  job_id: string;
-}
-
-interface PaymentResult {
-  transactionId: string;
-  success: boolean;
-}
-
-interface JobResult {
-  output: string;
-}
+import { PaymentState, Quote, PaymentResult, JobResult } from "@/types/payment";
 
 // Mock API function for job execution
 const mockExecuteJob = async (request: string): Promise<JobResult> => {
