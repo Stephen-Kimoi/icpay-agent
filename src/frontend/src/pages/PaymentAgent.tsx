@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
+// @ts-ignore - ICPay widget types may not be fully resolved
+import { IcpayPayButton, IcpaySuccess } from "@ic-pay/icpay-widget/react";
 import { PaymentState, PaymentResult, JobResult } from "@/types/payment";
 import { Quote } from "@/types/quote";
 import { getQuote } from "@/services/quoteService";
-
+  
 export default function PaymentAgent() {
   const [userRequest, setUserRequest] = useState("");
   const [state, setState] = useState<PaymentState>("idle");
@@ -13,14 +15,6 @@ export default function PaymentAgent() {
   const [jobResult, setJobResult] = useState<JobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  const connect = async () => {
-    setError("Wallet connection not implemented");
-  };
-
-  const disconnect = async () => {
-    setError("Wallet disconnection not implemented");
-  };
 
   const handleGetQuote = async (): Promise<void> => {
     if (!userRequest.trim()) {
@@ -35,7 +29,12 @@ export default function PaymentAgent() {
     setLoading(true);
     
     try {
-      const quoteData = await getQuote(userRequest);
+      // const quoteData = await getQuote(userRequest);
+      const quoteData = {
+        price: 0.0001,
+        currency: "ICP",
+        job_id: "1234567890",
+      };
       setQuote(quoteData);
       setState("quoted");
       setError(null);
@@ -47,10 +46,74 @@ export default function PaymentAgent() {
     }
   };
 
-  const handlePayNow = async (): Promise<void> => {
-    if (!quote) return;
-    setError("Payment functionality not implemented");
+  const handlePaymentSuccess = (detail: IcpaySuccess): void => {
+    const transactionId = detail.transactionId || detail.id || '';
+    setPaymentResult({
+      transactionId,
+      success: true,
+    });
+    setState("waiting_for_payment");
+    setError(null);
+    
+    // After payment success, we can proceed to execute the job
+    // For now, we'll just mark it as completed
+    // In a full implementation, you'd call execute_job here
+    setTimeout(() => {
+      setState("completed");
+    }, 2000);
   };
+
+  const handlePaymentError = (error: unknown): void => {
+    console.error("Error in handlePaymentError", error);
+    
+    let errorMessage = 'Payment failed. Please try again.';
+    
+    if (error && typeof error === 'object' && 'message' in error) {
+      const msg = (error as { message: string }).message;
+      
+      // Provide user-friendly error messages
+      if (msg.includes('Failed to fetch verified ledgers') || msg.includes('401')) {
+        errorMessage = 'ICPay authentication failed. Please check your publishable key (VITE_ICPAY_PUBLISHABLE_KEY) in your environment variables.';
+      } else if (msg.includes('CORS') || msg.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please ensure your Internet Computer replica is running and accessible. If using a wallet, check that the IC replica endpoint is configured correctly.';
+      } else {
+        errorMessage = msg;
+      }
+    }
+    
+    console.error("Error message", errorMessage);
+    setError(errorMessage);
+    setState("error");
+  };
+
+  // Create ICPay config when quote is available
+  const icpayConfig = useMemo(() => {
+    console.log("Creating ICPay config");
+    if (!quote) return null;
+    
+    const publishableKey = import.meta.env.VITE_ICPAY_PUBLISHABLE_KEY || '';
+    // const publishableKey = 'pk_test_1234567890';
+    console.log("Publishable key", publishableKey);
+
+    
+    // Validate publishable key
+    if (!publishableKey || publishableKey.trim() === '') {
+      console.error('ICPay publishable key is missing. Please set VITE_ICPAY_PUBLISHABLE_KEY in your environment variables.');
+      return null;
+    }
+    
+    return {
+      publishableKey,
+      amountUsd: quote.price,
+      defaultSymbol: quote.currency === "ICP" ? "ICP" : "ICP",
+      showLedgerDropdown: 'none' as const,
+      progressBar: { enabled: true, mode: 'modal' as const },
+      metadata: {
+        job_id: quote.job_id,
+        request: userRequest,
+      },
+    };
+  }, [quote, userRequest]);
 
   const handleReset = (): void => {
     setUserRequest("");
@@ -79,9 +142,6 @@ export default function PaymentAgent() {
 
   const isProcessing = state === "executing" || loading;
   const isPaymentPending = false;
-  const isConnected = false;
-  const hasWallet = false;
-  const principal = null;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
@@ -99,38 +159,6 @@ export default function PaymentAgent() {
 
       {/* Main Card */}
       <div className="bg-gradient-to-br from-gray-900/90 via-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-8">
-        {/* Wallet Status and Actions */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="text-sm text-gray-400">
-            {isConnected ? (
-              <span>
-                Wallet connected: <span className="font-mono text-gray-200">{String(principal || '')}</span>
-              </span>
-            ) : (
-              <span className="text-yellow-300">No wallet connected</span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {!isConnected ? (
-              <Button
-                onClick={() => { void connect(); }}
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
-              >
-                Connect Wallet
-              </Button>
-            ) : (
-              <Button
-                onClick={() => { void disconnect(); }}
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
-              >
-                Disconnect
-              </Button>
-            )}
-          </div>
-        </div>
-
         {/* Progress Stepper */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -250,20 +278,21 @@ export default function PaymentAgent() {
           </Button>
 
           {state === "quoted" && (
-            <Button
-              onClick={() => { void handlePayNow(); }}
-              disabled={isPaymentPending || !hasWallet}
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-6 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isPaymentPending ? (
-                <span className="inline-flex items-center justify-center">
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processing Payment...
-                </span>
+            <div className="flex-1">
+              {icpayConfig ? (
+                <IcpayPayButton
+                  config={icpayConfig}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                />
               ) : (
-                hasWallet ? "Pay Now" : "Connect Wallet to Pay"
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm">
+                  <p className="font-semibold mb-1">Configuration Error</p>
+                  <p>ICPay publishable key is missing. Please set VITE_ICPAY_PUBLISHABLE_KEY in your environment variables.</p>
+                  <p className="mt-2 text-xs text-yellow-400">See README.md for setup instructions.</p>
+                </div>
               )}
-            </Button>
+            </div>
           )}
 
           {state === "completed" && (
