@@ -15,7 +15,7 @@ export interface ICPayConfig {
     enabled: boolean;
     mode: 'modal' | 'horizontal' | 'vertical' | 'inline';
   };
-  metadata?: Record<string, string>;
+  metadata?: Record<string, number | string>;
 }
 
 /**
@@ -71,7 +71,7 @@ export const createICPayConfig = (
     showLedgerDropdown: 'dropdown',
     progressBar: { enabled: true, mode: 'modal' },
     metadata: {
-      job_id: quote.job_id,
+      job_id: Number(quote.job_id),
       request: userRequest,
     },
   };
@@ -92,7 +92,7 @@ export const handlePaymentSuccess = (detail: IcpaySuccess | any): PaymentResult 
   console.log("Extracted transaction ID:", transactionId);
   
   return {
-    transactionId,
+    transactionId: String(transactionId),
     success: true,
   };
 };

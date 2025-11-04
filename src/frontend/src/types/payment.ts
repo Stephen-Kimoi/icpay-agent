@@ -18,6 +18,7 @@ export interface PaymentResult {
 }
 
 export interface JobResult {
+  job_id: string;
   output: string;
+  completed_at: bigint;
 }
-

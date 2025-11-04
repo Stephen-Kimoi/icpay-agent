@@ -11,6 +11,7 @@ import {
   handlePaymentSuccess as icpayHandlePaymentSuccess,
   handlePaymentError as icpayHandlePaymentError,
 } from "@/services/icpayService";
+import { initiatePayment, completePayment, executeJob } from "@/services/jobService";
   
 export default function PaymentAgent() {
   const [userRequest, setUserRequest] = useState("");
@@ -34,16 +35,25 @@ export default function PaymentAgent() {
     setLoading(true);
     
     try {
-      // const quoteDataFromBackend = await getQuote(userRequest);
-      // console.log("quoteDataFromBackend", quoteDataFromBackend);
+      const quoteDataFromBackend = await getQuote(userRequest);
+      console.log("quoteDataFromBackend", quoteDataFromBackend);
 
       const quoteData = {
-        price: 0.001,
+        price: 0.01,
         currency: "ICP",
-        job_id: "1234567890",
+        job_id: String(quoteDataFromBackend.job_id),
       };
 
       setQuote(quoteData);
+      
+      // Initiate payment in backend
+      try {
+        await initiatePayment(quoteData.job_id);
+      } catch (err) {
+        console.warn("Payment initiation warning:", err);
+        // Continue even if payment initiation fails (might already exist)
+      }
+      
       setState("quoted");
       setError(null);
     } catch (err) {
@@ -54,18 +64,38 @@ export default function PaymentAgent() {
     }
   };
 
-  const handlePaymentSuccess = (detail: any): void => {
-    const result = icpayHandlePaymentSuccess(detail);
-    setPaymentResult(result);
-    setState("waiting_for_payment");
-    setError(null);
-    
-    // After payment success, we can proceed to execute the job
-    // For now, we'll just mark it as completed
-    // In a full implementation, you'd call execute_job here
-    setTimeout(() => {
+  const handlePaymentSuccess = async (detail: any): Promise<void> => {
+    try {
+      const result = icpayHandlePaymentSuccess(detail);
+      // const result = {
+      //   transactionId: "1234567890",
+      //   success: true,
+      // };
+      setPaymentResult(result);
+      setState("waiting_for_payment");
+      setError(null);
+      
+      // Complete payment in backend first
+      if (!quote) {
+        setError("Quote not found. Cannot complete payment.");
+        setState("error");
+        return;
+      }
+      
+      await completePayment(String(quote.job_id), result.transactionId);
+      
+      // Now execute the job
+      setState("executing");
+      const jobResult = await executeJob(quote.job_id);
+      
+      setJobResult(jobResult);
       setState("completed");
-    }, 2000);
+      setError(null);
+    } catch (err) {
+      console.error("Error in payment success flow:", err);
+      setError(err instanceof Error ? err.message : "Failed to complete payment or execute job. Please try again.");
+      setState("error");
+    }
   };
 
   const handlePaymentError = (error: unknown): void => {
