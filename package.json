@@ -3,7 +3,7 @@
     "node": ">=18.0.0",
     "npm": ">=7.0.0"
   },
-  "name": "infoundr-site",
+  "name": "icpay-agent",
   "private": true,
   "scripts": {
     "build": "npm run build --workspaces --if-present",
