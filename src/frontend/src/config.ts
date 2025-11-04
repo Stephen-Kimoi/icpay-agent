@@ -22,7 +22,7 @@ export const CANISTER_ID =
     : LOCAL_CANISTER_ID;
 
 // Debug: Log the canister ID and environment at runtime
-console.log('[Infoundr] ENV:', import.meta.env.VITE_DFX_NETWORK, 'MODE:', import.meta.env.VITE_ENV_MODE, 'CANISTER_ID:', CANISTER_ID);
+console.log('[icpay agent] ENV:', import.meta.env.VITE_DFX_NETWORK, 'MODE:', import.meta.env.VITE_ENV_MODE, 'CANISTER_ID:', CANISTER_ID);
 
 if (typeof window !== 'undefined') {
   const expectedMainnet = MAINNET_CANISTER_ID;
@@ -32,13 +32,13 @@ if (typeof window !== 'undefined') {
   const env = import.meta.env.VITE_DFX_NETWORK;
   const mode = import.meta.env.VITE_ENV_MODE;
   if (env === 'ic' && mode === 'playground' && current !== expectedPlayground) {
-    console.warn('[Infoundr] WARNING: Frontend is running in playground mode but CANISTER_ID does not match PLAYGROUND_CANISTER_ID!');
+    console.warn('[icpay agent] WARNING: Frontend is running in playground mode but CANISTER_ID does not match PLAYGROUND_CANISTER_ID!');
   }
   if (env === 'ic' && mode !== 'playground' && current !== expectedMainnet) {
-    console.warn('[Infoundr] WARNING: Frontend is running in mainnet mode but CANISTER_ID does not match MAINNET_CANISTER_ID!');
+    console.warn('[icpay agent] WARNING: Frontend is running in mainnet mode but CANISTER_ID does not match MAINNET_CANISTER_ID!');
   }
   if (env === 'local' && current !== expectedLocal) {
-    console.warn('[Infoundr] WARNING: Frontend is running in local mode but CANISTER_ID does not match LOCAL_CANISTER_ID!');
+    console.warn('[icpay agent] WARNING: Frontend is running in local mode but CANISTER_ID does not match LOCAL_CANISTER_ID!');
   }
 }
 

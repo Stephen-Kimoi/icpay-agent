@@ -3,22 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { PaymentState, Quote, PaymentResult, JobResult } from "@/types/payment";
 
-// Mock API function for job execution
-const mockExecuteJob = async (request: string): Promise<JobResult> => {
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  let output = "";
-  if (request.toLowerCase().includes("math") || request.toLowerCase().includes("solve")) {
-    output = "The answer is 42. (Note: This is a mock response. In a real implementation, the LLM canister would solve the problem.)";
-  } else if (request.toLowerCase().includes("poem") || request.toLowerCase().includes("write")) {
-    output = `In the realm of code and light,\nWhere automation takes its flight,\nICPAY powers the flow,\nMaking payments seamless, you know.\n\n(This is a mock poem. In production, the LLM canister generates real creative content.)`;
-  } else {
-    output = `Processing: "${request}"\n\nThis is a mock response. In a real implementation, the LLM canister would process your request and generate an appropriate output based on the task.`;
-  }
-
-  return { output };
-};
-
 export default function PaymentAgent() {
   const [userRequest, setUserRequest] = useState("");
   const [state, setState] = useState<PaymentState>("idle");
@@ -27,43 +11,12 @@ export default function PaymentAgent() {
   const [jobResult, setJobResult] = useState<JobResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Mock wallet state
-  const principal = null;
-  const isConnected = false;
-  const hasWallet = false;
-  const walletSelect = null;
-  const isGettingQuote = false;
-  const isPaymentPending = false;
-
   const connect = async () => {
-    console.log("connect called");
+    setError("Wallet connection not implemented");
   };
 
   const disconnect = async () => {
-    console.log("disconnect called");
-  };
-
-  const getQuote = (request: string) => {
-    console.log("getQuote called with:", request);
-    // Mock quote
-    setTimeout(() => {
-      setQuote({
-        price: 0.5,
-        currency: "ICP",
-        job_id: "job_1234567890",
-      });
-      setState("quoted");
-      setError(null);
-    }, 1000);
-  };
-
-  const createPayment = async (params: any) => {
-    console.log("createPayment called with:", params);
-    // Mock payment
-    return {
-      transactionId: "tx_mock_123",
-      id: "tx_mock_123",
-    };
+    setError("Wallet disconnection not implemented");
   };
 
   const handleGetQuote = (): void => {
@@ -71,87 +24,12 @@ export default function PaymentAgent() {
       setError("Please enter a request");
       return;
     }
-    setError(null);
-    setState("idle");
-    setQuote(null);
-    setPaymentResult(null);
-    setJobResult(null);
-    getQuote(userRequest);
+    setError("Quote functionality not implemented");
   };
 
   const handlePayNow = async (): Promise<void> => {
     if (!quote) return;
-
-    setError(null);
-    setState("waiting_for_payment");
-
-    try {
-      const publishableKey = "";
-
-      console.log("Payment environment check:", {
-        hasPublishableKey: !!publishableKey,
-        hasWallet,
-        isConnected,
-        principal,
-      });
-
-      if (publishableKey && hasWallet && walletSelect && principal) {
-        console.log("Initiating ICPay payment...");
-
-        const owner = principal;
-        const currency = quote.currency.toUpperCase();
-
-        if (currency === "USD") {
-          await createPayment({
-            mode: "usd",
-            usdAmount: quote.price,
-            symbol: "ICP",
-            metadata: { job_id: quote.job_id },
-            actorProvider: (canisterId: string, idl: unknown) =>
-              (walletSelect.getActor as (a: { canisterId: string; idl: unknown; requiresSigning: boolean; anon: boolean }) => unknown)({ canisterId, idl, requiresSigning: true, anon: false }),
-            connectedWallet: { owner },
-            enableEvents: true,
-            debug: true,
-          });
-        } else {
-          const e8s = Math.round(quote.price * 100_000_000);
-
-          await createPayment({
-            mode: "token",
-            amount: String(e8s),
-            symbol: currency,
-            metadata: { job_id: quote.job_id },
-            actorProvider: (canisterId: string, idl: unknown) =>
-              (walletSelect.getActor as (a: { canisterId: string; idl: unknown; requiresSigning: boolean; anon: boolean }) => unknown)({ canisterId, idl, requiresSigning: true, anon: false }),
-            connectedWallet: { owner },
-            enableEvents: true,
-            debug: true,
-          });
-        }
-
-        console.log("ICPay payment completed, executing job...");
-      } else {
-        console.log("Using mock payment (no ICPay setup detected)");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        const transactionId = `tx_mock_${Math.random().toString(36).substring(2, 15)}`;
-        setPaymentResult({
-          transactionId,
-          success: true,
-        });
-
-        console.log("Mock payment completed, executing job...");
-      }
-
-      setState("executing");
-      const result = await mockExecuteJob(userRequest);
-      setJobResult(result);
-      setState("completed");
-    } catch (err) {
-      console.error("Payment error:", err);
-      setError(err instanceof Error ? err.message : "Payment failed. Please try again.");
-      setState("error");
-    }
+    setError("Payment functionality not implemented");
   };
 
   const handleReset = (): void => {
@@ -179,7 +57,12 @@ export default function PaymentAgent() {
     return "completed";
   };
 
-  const isProcessing = isGettingQuote || isPaymentPending || state === "executing";
+  const isProcessing = state === "executing";
+  const isGettingQuote = false;
+  const isPaymentPending = false;
+  const isConnected = false;
+  const hasWallet = false;
+  const principal = null;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
@@ -202,7 +85,7 @@ export default function PaymentAgent() {
           <div className="text-sm text-gray-400">
             {isConnected ? (
               <span>
-                Wallet connected: <span className="font-mono text-gray-200">{principal?.toString()}</span>
+                Wallet connected: <span className="font-mono text-gray-200">{String(principal || '')}</span>
               </span>
             ) : (
               <span className="text-yellow-300">No wallet connected</span>
@@ -421,8 +304,7 @@ export default function PaymentAgent() {
 
       {/* Footer Info */}
       <div className="mt-8 text-center text-gray-500 text-sm">
-        <p>Configure VITE_ICPAY_PUBLISHABLE_KEY for live payments.</p>
-        <p className="mt-1">Falls back to mock payment when ICPay is not configured.</p>
+        <p>Configure payment functionality to enable payments.</p>
       </div>
     </div>
   );
