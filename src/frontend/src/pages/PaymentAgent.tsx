@@ -2,10 +2,15 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
 // @ts-ignore - ICPay widget types may not be fully resolved
-import { IcpayPayButton, IcpaySuccess } from "@ic-pay/icpay-widget/react";
+import { IcpayPayButton } from "@ic-pay/icpay-widget/react";
 import { PaymentState, PaymentResult, JobResult } from "@/types/payment";
 import { Quote } from "@/types/quote";
 import { getQuote } from "@/services/quoteService";
+import {
+  createICPayConfig,
+  handlePaymentSuccess as icpayHandlePaymentSuccess,
+  handlePaymentError as icpayHandlePaymentError,
+} from "@/services/icpayService";
   
 export default function PaymentAgent() {
   const [userRequest, setUserRequest] = useState("");
@@ -29,12 +34,15 @@ export default function PaymentAgent() {
     setLoading(true);
     
     try {
-      // const quoteData = await getQuote(userRequest);
+      // const quoteDataFromBackend = await getQuote(userRequest);
+      // console.log("quoteDataFromBackend", quoteDataFromBackend);
+
       const quoteData = {
-        price: 0.0001,
+        price: 0.001,
         currency: "ICP",
         job_id: "1234567890",
       };
+
       setQuote(quoteData);
       setState("quoted");
       setError(null);
@@ -46,12 +54,9 @@ export default function PaymentAgent() {
     }
   };
 
-  const handlePaymentSuccess = (detail: IcpaySuccess): void => {
-    const transactionId = detail.transactionId || detail.id || '';
-    setPaymentResult({
-      transactionId,
-      success: true,
-    });
+  const handlePaymentSuccess = (detail: any): void => {
+    const result = icpayHandlePaymentSuccess(detail);
+    setPaymentResult(result);
     setState("waiting_for_payment");
     setError(null);
     
@@ -64,55 +69,14 @@ export default function PaymentAgent() {
   };
 
   const handlePaymentError = (error: unknown): void => {
-    console.error("Error in handlePaymentError", error);
-    
-    let errorMessage = 'Payment failed. Please try again.';
-    
-    if (error && typeof error === 'object' && 'message' in error) {
-      const msg = (error as { message: string }).message;
-      
-      // Provide user-friendly error messages
-      if (msg.includes('Failed to fetch verified ledgers') || msg.includes('401')) {
-        errorMessage = 'ICPay authentication failed. Please check your publishable key (VITE_ICPAY_PUBLISHABLE_KEY) in your environment variables.';
-      } else if (msg.includes('CORS') || msg.includes('Failed to fetch')) {
-        errorMessage = 'Network error. Please ensure your Internet Computer replica is running and accessible. If using a wallet, check that the IC replica endpoint is configured correctly.';
-      } else {
-        errorMessage = msg;
-      }
-    }
-    
-    console.error("Error message", errorMessage);
+    const errorMessage = icpayHandlePaymentError(error);
     setError(errorMessage);
     setState("error");
   };
 
   // Create ICPay config when quote is available
   const icpayConfig = useMemo(() => {
-    console.log("Creating ICPay config");
-    if (!quote) return null;
-    
-    const publishableKey = import.meta.env.VITE_ICPAY_PUBLISHABLE_KEY || '';
-    // const publishableKey = 'pk_test_1234567890';
-    console.log("Publishable key", publishableKey);
-
-    
-    // Validate publishable key
-    if (!publishableKey || publishableKey.trim() === '') {
-      console.error('ICPay publishable key is missing. Please set VITE_ICPAY_PUBLISHABLE_KEY in your environment variables.');
-      return null;
-    }
-    
-    return {
-      publishableKey,
-      amountUsd: quote.price,
-      defaultSymbol: quote.currency === "ICP" ? "ICP" : "ICP",
-      showLedgerDropdown: 'none' as const,
-      progressBar: { enabled: true, mode: 'modal' as const },
-      metadata: {
-        job_id: quote.job_id,
-        request: userRequest,
-      },
-    };
+    return createICPayConfig(quote, userRequest);
   }, [quote, userRequest]);
 
   const handleReset = (): void => {
@@ -153,7 +117,7 @@ export default function PaymentAgent() {
           </h1>
         </div>
         <p className="text-gray-400 text-lg">
-          Powered by ICPay
+          Powered by <a href="https://icpay.org" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">icpay</a>
         </p>
       </div>
 
