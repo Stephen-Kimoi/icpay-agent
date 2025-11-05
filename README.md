@@ -2,6 +2,8 @@
 
 This is an autonomous payment agent example built on the Internet Computer that enables users to pay for AI-powered tasks using ICPay. Users submit requests, receive quotes, make payments, and get AI-generated results seamlessly.
 
+https://github.com/user-attachments/assets/9b5fdb30-0af6-4b2d-bda4-00d5629f1ddc
+
 ## Overview
 
 This application demonstrates a complete payment-to-execution workflow:
