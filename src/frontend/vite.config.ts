@@ -2,7 +2,17 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    environment("all", { prefix: "CANISTER_" }),
+    environment("all", { prefix: "DFX_" }),
+    environment("all", { prefix: "PUBLIC_" }),
+    environment("all", { prefix: "VITE_" }),
+  ],
+  envDir: '../',
+  define: {
+    'process.env': process.env
+  },
   css: {
     postcss: './postcss.config.js',
   },

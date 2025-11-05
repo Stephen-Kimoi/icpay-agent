@@ -23,8 +23,7 @@ export interface ICPayConfig {
  * @returns The publishable key if valid, null otherwise
  */
 export const getPublishableKey = (): string | null => {
-  console.log("Getting publishable key...");
-  const publishableKey = import.meta.env.PUBLIC_KEY || '';
+  const publishableKey = import.meta.env.VITE_PUBLIC_KEY || '';
 
   if (!publishableKey || publishableKey.trim() === '') {
     console.error('ICPay publishable key is missing. Please set PUBLIC_KEY in your environment variables.');

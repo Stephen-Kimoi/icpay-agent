@@ -36,19 +36,12 @@ export default function PaymentAgent() {
     
     try {
       const quoteDataFromBackend = await getQuote(userRequest);
-      console.log("quoteDataFromBackend", quoteDataFromBackend);
 
-      const quoteData = {
-        price: 0.01,
-        currency: "ICP",
-        job_id: String(quoteDataFromBackend.job_id),
-      };
-
-      setQuote(quoteData);
+      setQuote(quoteDataFromBackend);
       
       // Initiate payment in backend
       try {
-        await initiatePayment(quoteData.job_id);
+        await initiatePayment(quoteDataFromBackend.job_id);
       } catch (err) {
         console.warn("Payment initiation warning:", err);
         // Continue even if payment initiation fails (might already exist)
